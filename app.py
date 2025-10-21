@@ -2,6 +2,7 @@ import streamlit as st
 from transformers import pipeline
 from PIL import Image
 from deep_translator import GoogleTranslator
+import random
 
 # ==============================
 # ⚙️ Configuração
@@ -19,27 +20,56 @@ captioner = load_model()
 # 🎨 Interface
 # ==============================
 st.title("🧠 SmartPost Studio")
-st.write("Gere legendas automáticas e criativas em português a partir de imagens ✨")
+st.write("Gere legendas, traduções, hashtags e resumos automáticos para suas imagens ✨")
 
 uploaded_file = st.file_uploader("📤 Envie uma imagem", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="📸 Imagem enviada", use_column_width=True)
+    st.image(image, caption="📸 Imagem enviada", use_container_width=True)
 
-    if st.button("Gerar Legenda"):
-        with st.spinner("Gerando legenda..."):
-            # Gera legenda em inglês
+    if st.button("Gerar Post"):
+        with st.spinner("Gerando legenda e análise de imagem..."):
+            # ====== Legenda em inglês ======
             caption_en = captioner(image)[0]["generated_text"]
 
-            # Traduz com Google Translator (Deep Translator)
+            # ====== Tradução para português ======
             caption_pt = GoogleTranslator(source="en", target="pt").translate(caption_en)
 
-        st.subheader("📝 Resultado:")
-        st.write(f"**🇺🇸 Inglês:** {caption_en}")
-        st.write(f"**🇧🇷 Português:** {caption_pt}")
+            # ====== Resumo curto ======
+            resumo_opcoes = [
+                "Um toque criativo para suas redes sociais!",
+                "Perfeito para inspirar o dia ✨",
+                "Um momento simples que fala muito.",
+                "Transforme momentos em conexões 💫",
+                "Compartilhe boas vibrações 💛"
+            ]
+            resumo_curto = random.choice(resumo_opcoes)
 
-        texto = f"{caption_pt}\n\n(Original: {caption_en})"
-        st.download_button("💾 Baixar Legenda", texto, file_name="legenda.txt")
+            # ====== Hashtags automáticas ======
+            palavras = caption_pt.lower().split()
+            principais = [p.replace(",", "") for p in palavras if len(p) > 4]
+            hashtags = ["#" + p for p in principais[:5]]
+            hashtags_base = hashtags + ["#inspiracao", "#fotografia", "#smartpost", "#ia"]
+
+        # ==============================
+        # 🧾 Exibição dos resultados
+        # ==============================
+        st.subheader("📝 Resultados:")
+        st.markdown(f"**🇺🇸 Legenda (Inglês):** {caption_en}")
+        st.markdown(f"**🇧🇷 Tradução:** {caption_pt}")
+        st.markdown(f"**🪶 Resumo curto:** {resumo_curto}")
+        st.markdown(f"**🏷️ Hashtags:** {' '.join(hashtags_base)}")
+
+        texto_final = (
+            f"{caption_pt}\n\n{resumo_curto}\n\n{' '.join(hashtags_base)}"
+            f"\n\n(Original: {caption_en})"
+        )
+
+        st.download_button(
+            "💾 Baixar Post Completo",
+            texto_final,
+            file_name="post_gerado.txt"
+        )
 
 
