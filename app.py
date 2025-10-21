@@ -22,6 +22,14 @@ captioner = load_model()
 st.title("🧠 SmartPost Studio")
 st.write("Gere legendas, traduções, hashtags e resumos automáticos para suas imagens ✨")
 
+# Se o usuário quiser reiniciar o app
+if "nova_imagem" not in st.session_state:
+    st.session_state.nova_imagem = False
+
+if st.session_state.nova_imagem:
+    st.session_state.clear()
+    st.experimental_rerun()
+
 uploaded_file = st.file_uploader("📤 Envie uma imagem", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
@@ -71,5 +79,11 @@ if uploaded_file:
             texto_final,
             file_name="post_gerado.txt"
         )
+
+        # Novo botão: Enviar nova imagem
+        st.markdown("---")
+        if st.button("🖼️ Enviar nova imagem"):
+            st.session_state.nova_imagem = True
+            st.experimental_rerun()
 
 
