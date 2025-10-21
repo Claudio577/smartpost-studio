@@ -1,1 +1,6 @@
+streamlit
+transformers
+torch
+pillow
+sentencepiece
 
