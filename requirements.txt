@@ -2,4 +2,4 @@ streamlit
 transformers
 torch
 pillow
-sentencepiece
+deep-translator
