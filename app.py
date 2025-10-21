@@ -1,6 +1,7 @@
 import streamlit as st
 from transformers import pipeline
 from PIL import Image
+from deep_translator import GoogleTranslator
 
 # ==============================
 # ⚙️ Configuração
@@ -8,12 +9,11 @@ from PIL import Image
 st.set_page_config(page_title="SmartPost Studio", page_icon="💡")
 
 @st.cache_resource
-def load_models():
+def load_model():
     captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
-    translator = pipeline("translation_en_to_pt", model="Helsinki-NLP/opus-mt-en-pt")
-    return captioner, translator
+    return captioner
 
-captioner, translator = load_models()
+captioner = load_model()
 
 # ==============================
 # 🎨 Interface
@@ -32,8 +32,8 @@ if uploaded_file:
             # Gera legenda em inglês
             caption_en = captioner(image)[0]["generated_text"]
 
-            # Traduz para português
-            caption_pt = translator(caption_en)[0]["translation_text"]
+            # Traduz com Google Translator (Deep Translator)
+            caption_pt = GoogleTranslator(source="en", target="pt").translate(caption_en)
 
         st.subheader("📝 Resultado:")
         st.write(f"**🇺🇸 Inglês:** {caption_en}")
@@ -41,4 +41,5 @@ if uploaded_file:
 
         texto = f"{caption_pt}\n\n(Original: {caption_en})"
         st.download_button("💾 Baixar Legenda", texto, file_name="legenda.txt")
+
 
