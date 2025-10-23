@@ -18,12 +18,13 @@ st.write("Gere legendas, traduções, hashtags e resumos automáticos com mais p
 @st.cache_resource
 def load_caption_model():
     try:
-        # Modelo mais preciso (BLIP-2)
-        model_name = "Salesforce/blip2-flan-t5-xl"
+        # Modelo leve e compatível com Streamlit Cloud
+        model_name = "microsoft/git-large-coco"
         captioner = pipeline("image-to-text", model=model_name)
         st.sidebar.success(f"Modelo carregado: {model_name}")
-    except Exception:
-        # Fallback para modelo mais leve
+    except Exception as e:
+        # Fallback se o modelo principal falhar
+        st.sidebar.error(f"Falha ao carregar modelo principal: {e}")
         model_name = "Salesforce/blip-image-captioning-base"
         captioner = pipeline("image-to-text", model=model_name)
         st.sidebar.warning(f"Usando fallback: {model_name}")
@@ -31,11 +32,12 @@ def load_caption_model():
 
 @st.cache_resource
 def load_refiner_model():
-    # Modelo leve para refinar o texto (opcional)
     try:
         refiner = pipeline("text2text-generation", model="google/flan-t5-small")
+        st.sidebar.info("Refinador de texto ativo ✅")
         return refiner
-    except Exception:
+    except Exception as e:
+        st.sidebar.warning(f"Não foi possível carregar refinador: {e}")
         return None
 
 captioner = load_caption_model()
