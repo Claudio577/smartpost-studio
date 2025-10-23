@@ -5,41 +5,63 @@ from deep_translator import GoogleTranslator
 import random
 
 # ==============================
-# ⚙️ Configuração
+# ⚙️ Configuração inicial
 # ==============================
 st.set_page_config(page_title="SmartPost Studio", page_icon="💡")
 
+st.title("🧠 SmartPost Studio (versão otimizada 🚀)")
+st.write("Gere legendas, traduções, hashtags e resumos automáticos com mais precisão e velocidade ✨")
+
+# ==============================
+# 🧩 Carregamento dos modelos
+# ==============================
 @st.cache_resource
-def load_model():
-    captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
+def load_caption_model():
+    try:
+        # Modelo mais preciso (BLIP-2)
+        model_name = "Salesforce/blip2-flan-t5-xl"
+        captioner = pipeline("image-to-text", model=model_name)
+        st.sidebar.success(f"Modelo carregado: {model_name}")
+    except Exception:
+        # Fallback para modelo mais leve
+        model_name = "Salesforce/blip-image-captioning-base"
+        captioner = pipeline("image-to-text", model=model_name)
+        st.sidebar.warning(f"Usando fallback: {model_name}")
     return captioner
 
-captioner = load_model()
+@st.cache_resource
+def load_refiner_model():
+    # Modelo leve para refinar o texto (opcional)
+    try:
+        refiner = pipeline("text2text-generation", model="google/flan-t5-small")
+        return refiner
+    except Exception:
+        return None
+
+captioner = load_caption_model()
+refiner = load_refiner_model()
 
 # ==============================
 # 🎨 Interface
 # ==============================
-st.title("🧠 SmartPost Studio")
-st.write("Gere legendas, traduções, hashtags e resumos automáticos para suas imagens ✨")
-
-# Se o usuário quiser reiniciar o app
-if "nova_imagem" not in st.session_state:
-    st.session_state.nova_imagem = False
-
-if st.session_state.nova_imagem:
-    st.session_state.clear()
-    st.experimental_rerun()
-
 uploaded_file = st.file_uploader("📤 Envie uma imagem", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
+
+    # Reduz tamanho da imagem para acelerar
+    image = image.resize((512, 512))
     st.image(image, caption="📸 Imagem enviada", use_container_width=True)
 
-    if st.button("Gerar Post"):
-        with st.spinner("Gerando legenda e análise de imagem..."):
-            # ====== Legenda em inglês ======
+    if st.button("✨ Gerar Post"):
+        with st.spinner("Gerando legenda e análise da imagem..."):
+            # ====== Legenda base (em inglês) ======
             caption_en = captioner(image)[0]["generated_text"]
+
+            # ====== Refinar texto (opcional) ======
+            if refiner:
+                prompt = f"Melhore a legenda em inglês para que soe natural e descritiva: {caption_en}"
+                caption_en = refiner(prompt, max_new_tokens=50)[0]["generated_text"]
 
             # ====== Tradução para português ======
             caption_pt = GoogleTranslator(source="en", target="pt").translate(caption_en)
@@ -63,9 +85,9 @@ if uploaded_file:
         # ==============================
         # 🧾 Exibição dos resultados
         # ==============================
-        st.subheader("📝 Resultados:")
-        st.markdown(f"**🇺🇸 Legenda (Inglês):** {caption_en}")
-        st.markdown(f"**🇧🇷 Tradução:** {caption_pt}")
+        st.subheader("📝 Resultados")
+        st.markdown(f"**🇺🇸 Legenda (Inglês refinada):** {caption_en}")
+        st.markdown(f"**🇧🇷 Tradução (Português):** {caption_pt}")
         st.markdown(f"**🪶 Resumo curto:** {resumo_curto}")
         st.markdown(f"**🏷️ Hashtags:** {' '.join(hashtags_base)}")
 
@@ -83,7 +105,9 @@ if uploaded_file:
         # Novo botão: Enviar nova imagem
         st.markdown("---")
         if st.button("🖼️ Enviar nova imagem"):
-            st.session_state.nova_imagem = True
+            st.session_state.clear()
             st.experimental_rerun()
+else:
+    st.info("Envie uma imagem para começar 💡")
 
 
